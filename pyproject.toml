@@ -3,13 +3,19 @@ name = "s1-pipeline"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.148.0",
+    "matplotlib>=3.11.2",
     "pytest>=9.1.1",
+    "torch>=2.5.1",
+    "torchvision>=0.20.1",
     "uvicorn>=0.54.0",
 ]
 
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cu121"
