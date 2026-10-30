@@ -5,12 +5,17 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.148.0",
-    "matplotlib>=3.11.2",
-    "pytest>=9.1.1",
-    "torch>=2.5.1",
-    "torchvision>=0.20.1",
-    "uvicorn>=0.54.0",
+    "torch>=2.1,<2.3",
+    "torchvision>=0.16,<0.18",
+    "torchaudio>=2.1,<2.3",
+    "transformers>=4.36,<4.42",
+    "fastapi",
+    "uvicorn",
+    "pytest",
+    "openai>=1.0",
+    "pypdf",
+    "jieba",
+    "rank-bm25"
 ]
 
 
@@ -19,3 +24,14 @@ pythonpath = ["."]
 
 [[tool.uv.index]]
 url = "https://download.pytorch.org/whl/cu121"
+
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
