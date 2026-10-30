@@ -17,6 +17,7 @@ dependencies = [
     "jieba",
     "rank-bm25",
     "numpy<2",
+    "matplotlib>=3.11.2",
 ]
 
 
