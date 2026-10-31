@@ -1,0 +1,158 @@
+[
+  {
+    "qid": "dev-001",
+    "question": "FastAPI 自动生成的交互式 API 文档默认提供了哪两种 UI 界面？",
+    "gold_docs": [
+      "doc_01"
+    ],
+    "retrieved_docs": [
+      "doc_02",
+      "doc_01",
+      "doc_01",
+      "doc_01",
+      "doc_01"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-002",
+    "question": "FastAPI 底层主要依赖哪两个核心库来分别负责 Web 部分和数据校验部分？",
+    "gold_docs": [
+      "doc_01"
+    ],
+    "retrieved_docs": [
+      "doc_01",
+      "doc_01",
+      "doc_02",
+      "doc_04",
+      "doc_06"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-003",
+    "question": "相比于 TensorFlow 的静态计算图，PyTorch 最显著的计算图机制特点是什么？",
+    "gold_docs": [
+      "doc_03"
+    ],
+    "retrieved_docs": [
+      "doc_03",
+      "doc_03",
+      "doc_04",
+      "doc_05",
+      "doc_10"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-004",
+    "question": "在 PyTorch 中，如何检查一个张量是否存储在 GPU 上？",
+    "gold_docs": [
+      "doc_05"
+    ],
+    "retrieved_docs": [
+      "doc_05",
+      "doc_03",
+      "doc_04",
+      "doc_05",
+      "doc_02"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-005",
+    "question": "在神经网络的训练循环中，为什么在调用 loss.backward() 之前必须先调用 optimizer.zero_grad()？",
+    "gold_docs": [
+      "doc_06"
+    ],
+    "retrieved_docs": [
+      "doc_09",
+      "doc_09",
+      "doc_06",
+      "doc_07",
+      "doc_09"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-006",
+    "question": "在 PyTorch 中，如果希望 DataLoader 每次加载 64 个样本并打乱数据顺序，应该设置什么参数？",
+    "gold_docs": [
+      "doc_08"
+    ],
+    "retrieved_docs": [
+      "doc_08",
+      "doc_08",
+      "doc_04",
+      "doc_08",
+      "doc_08"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-007",
+    "question": "在 PyTorch 中，如果要定义一个二维最大池化层（核大小为 2x2），应该使用哪个类或函数？",
+    "gold_docs": [
+      "doc_10"
+    ],
+    "retrieved_docs": [
+      "doc_10",
+      "doc_10",
+      "doc_10",
+      "doc_09",
+      "doc_04"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-008",
+    "question": "使用 PyTorch 训练线性回归模型时，如果发现损失值一直不下降，文档中给出了哪几种检查或调整的建议？",
+    "gold_docs": [
+      "doc_09"
+    ],
+    "retrieved_docs": [
+      "doc_09",
+      "doc_09",
+      "doc_09",
+      "doc_09",
+      "doc_09"
+    ],
+    "hit_at_5": true,
+    "is_answerable": true
+  },
+  {
+    "qid": "dev-009",
+    "question": "如何将 PyTorch 模型导出为 ONNX 格式并在 C++ 环境中部署？",
+    "gold_docs": [],
+    "retrieved_docs": [
+      "doc_03",
+      "doc_04",
+      "doc_03",
+      "doc_03",
+      "doc_01"
+    ],
+    "hit_at_5": false,
+    "is_answerable": false
+  },
+  {
+    "qid": "dev-010",
+    "question": "我在 WSL2 中使用 NVIDIA RTX 3050 显卡微调大语言模型时，如果遇到显存溢出（OOM），应该如何修改 PyTorch 代码？",
+    "gold_docs": [],
+    "retrieved_docs": [
+      "doc_09",
+      "doc_03",
+      "doc_03",
+      "doc_02",
+      "doc_09"
+    ],
+    "hit_at_5": false,
+    "is_answerable": false
+  }
+]
