@@ -20,6 +20,7 @@ dependencies = [
     "matplotlib>=3.11.2",
     "tensorboard>=2.21.0",
     "tqdm>=4.66.5",
+    "scikit-learn>=1.9.1",
 ]
 
 
