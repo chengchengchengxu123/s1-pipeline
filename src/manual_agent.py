@@ -48,12 +48,17 @@ def calculate(expression: str) -> str:
 def query_metadata(name: str) -> str:
     try:
         if name == "questions":
-            # 暂时不读文件了，直接返回假数据，先测试真实大模型的调用能力
-            return "questions.json 中共有 10 条记录（模拟数据）"
+            path = "data/test/questions.jsonl" 
+            count = 0
+            with open(path, 'r', encoding="utf-8") as f:
+                for line in f:
+                    # 过滤空行，如果有内容就算一条
+                    if line.strip():
+                        count += 1
+            return f"questions.jsonl 中共有 {count} 条记录"
         return f"未知元数据：{name}"
     except Exception as e:
         return f"[工具异常] 元数据查询失败：{e}"
-
 # 工具白名单
 TOOLS = {
     "search_docs": search_docs,
@@ -63,9 +68,9 @@ TOOLS = {
 SYSTEM_PROMPT = """你是一个可以使用工具的 Agent。你只能输出一个 JSON 对象，不要输出 Markdown 代码块或额外解释。
 
 可用工具：
-1. search_docs：检索项目文档。参数：{"query": "检索词"}
+1. search_docs：检索项目文档的具体内容。只有当用户询问具体知识（如“什么是Transformer”）时使用。参数：{"query": "检索词"}
 2. calculate：数学计算。参数：{"expression": "如 (12+8)*3"}
-3. query_metadata：查询元数据。参数：{"name": "questions"}
+3. query_metadata：查询数据文件的统计信息（如记录条数）。当用户问“有多少条记录”时使用。参数：{"name": "questions"}
 
 输出格式二选一：
 A. 调用工具：{"action": "工具名", "args": {参数对象}}
