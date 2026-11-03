@@ -14,7 +14,7 @@ class QwenProvider:
             api_key=api_key, 
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
-        self.model = "qwen-turbo"
+        self.model="qwen3.8-flash"
 
     def chat(self, prompt, expect_json=False, max_retries=3):
         for attempt in range(max_retries):
@@ -42,20 +42,26 @@ class QwenProvider:
                 if attempt == max_retries - 1:
                     raise RuntimeError(f"超过最大重试次数，任务失败。最后错误: {e}")
                 
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                wait_time = 5.0 
                 print(f"   -> 等待 {wait_time:.2f} 秒后重试...")
                 time.sleep(wait_time)
 
 # === 新增的 Mock 假模型 ===
 class MockProvider:
     def __init__(self):
-        pass
-    
+        self.step = 0  # 增加一个计数器
+
     def chat(self, prompt, expect_json=False, max_retries=3):
         print("[Mock模式] 正在返回模拟数据...")
         if expect_json:
-            return {"name": "张三", "age": 25, "source": "mock"}
-        return "这是一个模拟的大模型回答，因为当前没有真实的API额度。"
+            self.step += 1
+            if self.step == 1:
+                # 第一次：模拟模型决定调用工具
+                return {"action": "query_metadata", "args": {"name": "questions"}}
+            else:
+                # 第二次：模型看到了 Observation，决定输出最终回答
+                return {"action": "final_answer", "answer": "经过查询，questions.json 共有 10 条记录。"}
+        return "这是一个模拟的大模型回答..."
 
 # === 新增的工厂函数 ===
 def get_provider(use_mock=True):
