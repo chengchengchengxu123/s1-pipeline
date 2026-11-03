@@ -21,6 +21,9 @@ dependencies = [
     "tensorboard>=2.21.0",
     "tqdm>=4.66.5",
     "scikit-learn>=1.9.1",
+    "langgraph>=1.2.19",
+    "langchain-core>=1.7.2",
+    "langchain-openai>=1.4.3",
 ]
 
 
