@@ -1,0 +1,6 @@
+{
+  "run_id": "20261115_222555",
+  "input_path": "data/test/questions.jsonl",
+  "n_samples": 10,
+  "provider": "mock"
+}
