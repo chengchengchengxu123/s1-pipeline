@@ -65,22 +65,28 @@ def summarize_report(result_file):
         print(f"❌ 找不到结果文件: {result_file}")
         return
         
-    n_total = 0
-    n_ok = 0
-    n_error = 0
+    latest_results = {} # 💡 用字典以 sample_id 为键进行去重
     
     with open(result_file, 'r', encoding='utf-8') as f:
         for line in f:
             if not line.strip(): continue
             row = json.loads(line)
-            n_total += 1
-            if row.get("status") == "ok":
-                n_ok += 1
-            else:
-                n_error += 1
-                
+            sid = row.get("sample_id")
+            
+            # 💡 核心逻辑：如果文件里有重复的 ID，用最新的覆盖旧的
+            # 或者如果之前已经有 "ok" 了，就不要被后来的 "error" 覆盖（视业务而定）
+            if sid not in latest_results or row["status"] == "ok":
+                latest_results[sid] = row
+
+    # 基于去重后的字典来统计
+    n_total = len(latest_results)
+    n_ok = sum(1 for r in latest_results.values() if r["status"] == "ok")
+    n_error = n_total - n_ok
     error_rate = n_error / n_total if n_total > 0 else 0.0
+
+    latencies = [r["latency_ms"] for r in latest_results.values() if r["status"] == "ok" and "latency_ms" in r]
     
+    # ... (保留你下面的 print 打印逻辑不变) ...
     print("\n" + "="*40)
     print(f"📊 评测报告: {os.path.basename(result_file)}")
     print("="*40)
@@ -88,7 +94,124 @@ def summarize_report(result_file):
     print(f"成功数 (n_ok)       : {n_ok}")
     print(f"失败数 (n_error)    : {n_error}")
     print(f"失败率 (error_rate) : {error_rate:.2%}")
+    
+    if latencies:
+        import numpy as np
+        p50 = np.percentile(latencies, 50)
+        p95 = np.percentile(latencies, 95)
+        print(f"P50 延迟 (中位数)   : {p50:.2f} ms")
+        print(f"P95 延迟 (尾部)     : {p95:.2f} ms")
+    else:
+        print("P50/P95 延迟        : 无数据")
     print("="*40 + "\n")
+
+
+import asyncio
+import time
+import json
+
+# 1. 异步的 Mock Provider
+async def async_mock_provider(question):
+    await asyncio.sleep(0.5)  # 模拟 500ms 的真实网络请求
+    if "test-002" in question:
+        raise TimeoutError("模拟 API 超时")
+    return f"Mock回答: {question[:5]}"
+
+# 2. 单条数据的异步执行逻辑
+async def run_one_async(sem, sample, max_retries=3):
+    sid = sample.get("qid", "unknown")
+    q = sample.get("question", "")
+    
+    start_time = time.perf_counter()
+    
+    async with sem:
+        for attempt in range(max_retries + 1):
+            try:
+                # 1. 模拟必然超时的测试数据
+                if sid == "test-002":
+                    raise TimeoutError("模拟 429 限流或网络超时")
+                
+                # 2. 正常请求
+                ans = await async_mock_provider(q)
+                status, error = "ok", None
+                break # 成功就跳出重试循环
+                
+            except TimeoutError as e:
+                if attempt == max_retries:
+                    # 重试次数用尽，记录最终失败
+                    ans, status, error = None, "error", f"重试{max_retries}次后失败: {e}"
+                else:
+                    # 💡 核心：指数退避 (1秒, 2秒, 4秒...)
+                    backoff_time = 2 ** attempt 
+                    print(f"⚠️ {sid} 触发重试，等待 {backoff_time}s 后第 {attempt+1} 次重试...")
+                    await asyncio.sleep(backoff_time)
+            except Exception as e:
+                ans, status, error = None, "error", str(e)
+                break
+                
+    elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    return {"sample_id": sid, "status": status, "output": ans, "error": error, "latency_ms": elapsed_ms}
+
+# 3. 异步主控循环
+async def run_eval_async(input_path, output_dir, concurrency):
+    samples = load_samples(input_path)
+    if len(samples) < 30:
+        samples = (samples * 4)[:30]
+        
+    # 固定输出文件名，不要带时间戳，这样下次运行才能追加到同一个文件！
+    output_file = Path(output_dir) / f"resume_test_run.jsonl"
+    
+    # 💡 核心 1：读取已完成的任务，存入 done_ids
+    done_ids = set()
+    if output_file.exists():
+        with open(output_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip(): continue
+                row = json.loads(line)
+                if row.get("status") == "ok":
+                    done_ids.add(row["sample_id"])
+        print(f"♻️ 发现历史记录，已跳过 {len(done_ids)} 条已成功的数据。")
+
+    # 💡 核心 2：过滤出还需要跑的任务
+    pending_samples = [s for s in samples if s.get("qid") not in done_ids]
+    
+    if not pending_samples:
+        print("🎉 所有任务均已完成，无需重跑！")
+        return
+
+    print(f"🚀 开始续跑，待跑 {len(pending_samples)} 条，并发数={concurrency}...")
+    
+    sem = asyncio.Semaphore(concurrency)
+    
+    # 💡 核心 3：边跑边写文件，使用 'a' 追加模式，防止中途 Ctrl+C 丢失进度
+    with open(output_file, 'a', encoding='utf-8') as f:
+        tasks = [run_one_async(sem, s) for s in pending_samples]
+        
+        # as_completed 能在任何一个任务完成时立刻返回，而不是等全部完成
+        for future in asyncio.as_completed(tasks):
+            result = await future
+            f.write(json.dumps(result, ensure_ascii=False) + '\n')
+            f.flush() # 强制写入磁盘
+
+    print(f"✅ 续跑完成！结果保存在 {output_file}")
+
+    def summarize_report(result_file):
+        # ... (保留你昨天的 n_total, n_ok 统计逻辑) ...
+        
+        latencies = []
+        with open(result_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip(): continue
+                row = json.loads(line)
+                if row["status"] == "ok":
+                    latencies.append(row["latency_ms"])
+                    
+        if latencies:
+            p50 = np.percentile(latencies, 50)
+            p95 = np.percentile(latencies, 95)
+            print(f"P50 延迟: {p50:.2f} ms")
+            print(f"P95 延迟: {p95:.2f} ms")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CLI 评测工具")
@@ -96,11 +219,11 @@ if __name__ == "__main__":
     parser.add_argument("--input", default="data/test/questions.jsonl", help="输入 JSONL 路径")
     parser.add_argument("--output_dir", default="artifacts/eval_runs", help="输出目录")
     parser.add_argument("--report_file", help="当 mode=report 时，指定要分析的 jsonl 文件路径")
-    
+    parser.add_argument("--concurrency", type=int, default=1, help="并发数")
     args = parser.parse_args()
     
     if args.mode == "run":
-        run_eval(args.input, args.output_dir)
+        asyncio.run(run_eval_async(args.input, args.output_dir, args.concurrency))
     elif args.mode == "report":
         if not args.report_file:
             print("❌ 报错：使用 report 模式必须提供 --report_file 参数")
