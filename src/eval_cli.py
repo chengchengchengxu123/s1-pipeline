@@ -212,10 +212,58 @@ async def run_eval_async(input_path, output_dir, concurrency):
             print(f"P50 延迟: {p50:.2f} ms")
             print(f"P95 延迟: {p95:.2f} ms")
 
+def validate_data(input_path):
+    print(f"🔍 开始校验数据: {input_path}")
+    if not os.path.exists(input_path):
+        print(f"❌ 文件不存在")
+        return
+
+    seen_ids = set()
+    errors = []
+    n_total = 0
+
+    with open(input_path, 'r', encoding='utf-8') as f:
+        for line_no, line in enumerate(f, 1):
+            if not line.strip(): continue
+            n_total += 1
+            
+            # 1. 校验 JSON 格式
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError as e:
+                errors.append(f"行 {line_no}: JSON解析失败 - {e}")
+                continue
+                
+            # 2. 校验必要字段
+            qid = data.get("qid")
+            question = data.get("question")
+            if not qid:
+                errors.append(f"行 {line_no}: 缺失 qid 字段")
+            if not question:
+                errors.append(f"行 {line_no}: 缺失 question 字段")
+                
+            # 3. 校验 ID 唯一性
+            if qid in seen_ids:
+                errors.append(f"行 {line_no}: 发现重复的 qid '{qid}'")
+            else:
+                seen_ids.add(qid)
+
+    # 打印质检报告
+    print("\n" + "="*40)
+    print("🛡️ 数据质检报告")
+    print("="*40)
+    print(f"总行数: {n_total}, 合法唯一ID数: {len(seen_ids)}")
+    if errors:
+        print(f"❌ 发现 {len(errors)} 个错误:")
+        for err in errors[:10]: # 只展示前10个
+            print(f"  - {err}")
+    else:
+        print("✅ 数据格式完美，无重复，无缺失！")
+    print("="*40 + "\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CLI 评测工具")
-    parser.add_argument("--mode", choices=["run", "report"], default="run", help="run=跑评测，report=出报告")
+    parser.add_argument("--mode", choices=["run", "report", "validate"], default="run", help="run=跑评测，report=出报告")
     parser.add_argument("--input", default="data/test/questions.jsonl", help="输入 JSONL 路径")
     parser.add_argument("--output_dir", default="artifacts/eval_runs", help="输出目录")
     parser.add_argument("--report_file", help="当 mode=report 时，指定要分析的 jsonl 文件路径")
@@ -229,3 +277,8 @@ if __name__ == "__main__":
             print("❌ 报错：使用 report 模式必须提供 --report_file 参数")
         else:
             summarize_report(args.report_file)
+    elif args.mode == "validate":  # 💡 新增这个分支
+        validate_data(args.input)
+    
+        
+        
